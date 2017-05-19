@@ -1,4 +1,5 @@
 #include <cuda.h>
+#include <stdio.h>
 
 #include "kernels.cuh"
 
@@ -10,11 +11,14 @@ __global__ void InitDelaysKernel(unsigned int *delays, unsigned int nchans, floa
     delays[idx] = (int)(4.15e+06 * ( 1.0f / (fbott * fbott) - 1.0f / (ftop * ftop)) * dm / tsamp);
 }
 
-__global__ void TransposeKernel(unsigned char *indata, unsigned char *outdata, unsigned int insize, unsigned int perthread) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < insize) {
-        for (int ichan = 0; ichan < perthread; ichan++) {
-            outdata[(threadIdx.x * perthread + ichan) * gridDim.x + blockIdx.x] = indata[idx * perthread + ichan];
+__global__ void TransposeKernel(unsigned char *indata, unsigned char *outdata, unsigned int outsamples, unsigned int perthread, unsigned int perblock) {
+    unsigned int sampid;
+    for (int isamp = 0; isamp < perblock; isamp++) {
+        sampid = blockIdx.x * perblock + isamp;
+        if (sampid < outsamples) {
+            for (int ichan = 0; ichan < perthread; ichan++) {
+                outdata[(threadIdx.x * perthread + ichan) * outsamples + (blockIdx.x * perblock + isamp)] = indata[(blockIdx.x * perblock + isamp) * blockDim.x * perthread + threadIdx.x * perthread + ichan];
+            }
         }
     }
 }

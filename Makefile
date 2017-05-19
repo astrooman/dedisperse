@@ -10,8 +10,8 @@ DEBUG=#-g -G
 INCLUDE = -I${INC_DIR}
 LIBS = -lstdc++ -lcudart -lcuda
 
-CFLAGS = -Wall -Wextra -std=c++11
-NVCC_FLAG = --std=c++11 -Xcompiler ${DEBUG} #--default-stream per-thread
+CFLAGS = -Wall -Wextra 
+NVCC_FLAG = -arch=sm_52 -Xcompiler ${DEBUG} #--default-stream per-thread
 
 CPPOBJECTS = ${OBJ_DIR}/filterbank.o
 
