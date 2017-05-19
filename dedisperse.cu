@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     }
 
     cout << "Saved the second original file..." << endl;
- 
+
     origfile2.close();
 */
     unsigned int *ddelays;
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
     nthreads.x = min(filhead.nchans, 1024);
     nblocks.x =  (insamps - 1) / perblock + 1;
     unsigned int perthread = filhead.nchans / nthreads.x;
-    
+
     cout << "Transposing the data..." << endl;
     cout << perthread << " channels per thread..." << endl;
     cout << nblocks.x << " blocks in x dimension..." << endl;
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
     }
 
     for (int ichan = 0; ichan < filhead.nchans; ichan++) {
-        for (int isamp = 0; isamp < insamps; isamp++) {   
+        for (int isamp = 0; isamp < insamps; isamp++) {
             transfile << (int)trans[ichan * filhead.nsamps + isamp] << " ";
         }
         transfile << endl;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     size_t outsamps = filhead.nsamps - maxdelay;
     if (verbose)
         cout << "Number of output samples: " << outsamps << endl;
-    size_t outsize = filhead.nchans * outsamps;
+    size_t outsize = outbands * outsamps;
     float *outdata;
     cudaCheckError(cudaMalloc((void**)&outdata, outsize * sizeof(float)));
 
@@ -162,10 +162,13 @@ int main(int argc, char *argv[]) {
         cout << "Number of blocks to use: " << nblocks.x << endl;
         cout << "Threads per block: " << nthreads.x << endl;
     }
-    DedisperseKernel<<<nblocks, nthreads, 0>>>(transdata, outdata, ddelays, filhead.nsamps, outsamps, perblock, perthread);
+
+    // DedisperseKernel<<<nblocks, nthreads, 0>>>(transdata, outdata, ddelays, filhead.nsamps, outsamps, perblock, perthread);
+    nthreads.x = outbands;
+    perthread = filhead.nchans / nthreads.x;
+    DedisperseBandKernel<<<nblocks, nthreads, 0>>>(transdata, outdata, ddelays, filhead.nsamps, outsamps, perblock, perthread, outbands);
     cudaCheckError(cudaDeviceSynchronize());
     cout << "Data has been dedispersed..." << endl;
-
 
     float *saved = new float[outsize];
     cudaCheckError(cudaMemcpy(saved, outdata, outsize * sizeof(float), cudaMemcpyDeviceToHost));

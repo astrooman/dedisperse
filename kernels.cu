@@ -39,3 +39,27 @@ __global__ void DedisperseKernel(unsigned char *indata, float *outdata, unsigned
     }
 
 }
+
+__global__ void DedisperseBandKernel(unsigned char *indata, float *outdata, unsigned int *delays, unsigned int insamples, unsigned int outsamples, unsigned int perblock, unsigned int perband, unsigned int outbands) {
+
+    unsigned int chanidx;
+    unsigned int sampidx;
+
+    float sum;
+
+    int bandidx = threadIdx.x;
+
+    for (unsigned int isamp = 0; isamp < perblock; isamp++) {
+        sampidx = blockIdx.x * perblock + isamp;
+        sum = 0.0;
+        if (sampid < outsamples) {
+            for (unsigned int ichan = 0; ichan < perband; ichan ++) {
+                chanidx = bandidx * perband + ichan;
+                //outdata[chanid * outsamples + sampid] = (float)indata[chanid * insamples + sampid + delays[chanid]];
+                sum += (float)indata[chanidx * insamples + sampidx + delays[chanidx]];
+            }
+            outdata[bandidx * outsamples + sampid] = sum;
+        }
+    }
+
+}
